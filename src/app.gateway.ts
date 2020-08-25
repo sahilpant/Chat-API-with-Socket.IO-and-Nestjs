@@ -1,15 +1,9 @@
 import { SubscribeMessage, WebSocketGateway, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
-import { RedisService } from 'nestjs-redis';
 
 @WebSocketGateway()
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-
-
-  constructor(
-    private readonly redisService: RedisService,
-  ){}
   
   @WebSocketServer() wss: Server;
   
@@ -36,19 +30,21 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   afterInit(server: Server):void {
     this.logger.log('initiated');
   }
-  
-  
-  async func(user:Socket,data:string,time:number): Promise<void>{
-    const client = this.redisService.getClient('test');
-    const myDate = new Date(time);
-    await client.hmset(data,myDate.toLocaleString('en-In',{
-      hour12:false,
-    }),user.id);
-  }
 
   @SubscribeMessage('chat')
-  async handleMessage(client: Socket, data: string): Promise<void> {
-    await this.func(client,data,Date.now());
-    this.wss.emit('chat',`message from user ${this.users[client.id]} ==>> ${data}`);
+  async handleMessage(client: Socket, data:{message: string , room: string}): Promise<void> {
+    this.wss.to('hello').emit('chat',`message from user ${this.users[client.id]} ==>> ${data}`);
   }
+
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(client: Socket, room: string){
+    client.join(room);
+    client.broadcast.to(room).emit(`${this.users[client.id]} joined ${room}`);
+  }
+
+  @SubscribeMessage('leaveRoom')
+  handleLeaveRoom(client: Socket, room: string){
+    client.leave(room);
+    client.broadcast.to(room).emit(`${this.users[client.id]} left ${room}`);
+  } 
 }
