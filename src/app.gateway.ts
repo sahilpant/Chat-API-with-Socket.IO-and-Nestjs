@@ -2,7 +2,7 @@ import { SubscribeMessage, WebSocketGateway, OnGatewayInit, OnGatewayConnection,
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 
-@WebSocketGateway()
+@WebSocketGateway({namespace:'/chat'})
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   
   @WebSocketServer() wss: Server;
@@ -24,7 +24,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     this.userid.push(client.id)
     this.logger.log(`user connected ${client.id}`);
     client.broadcast.emit(`user ${this.users[client.id]} joined the channel`);
-    this.wss.to(this.userid[this.ctr-1]).emit(`Welcome To the server user ${this.ctr}`)
+    this.wss.to(this.userid[this.ctr-1]).emit(`Welcome To the server user ${this.ctr}`);
   }
   
   afterInit(server: Server):void {
@@ -46,5 +46,12 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   handleLeaveRoom(client: Socket, room: string){
     client.leave(room);
     client.broadcast.to(room).emit(`${this.users[client.id]} left ${room}`);
-  } 
+  }
+  
+  @SubscribeMessage('welcome')
+  handlewelcome(client:Socket) {
+    console.log(client.id);
+    client.emit('welcome','welcome to the server');
+  }
+  
 }
