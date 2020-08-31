@@ -7,7 +7,8 @@ import { Logger } from '@nestjs/common';
 export class TestGateway implements OnGatewayInit, OnGatewayConnection , OnGatewayDisconnect {
   
   private logger:Logger = new Logger('TestGateway');
-  private check:boolean = false;
+  private check = {};
+  private limit = 0;
 
   @WebSocketServer() wss:Server;
 
@@ -17,10 +18,12 @@ export class TestGateway implements OnGatewayInit, OnGatewayConnection , OnGatew
   }
   handleConnection(client: Socket):void {
     client.on('user', (data) => {
-      if(data === 'sahil') {
+      if(data === 'sahil' && this.limit < 2) {
         this.logger.log(`user connected ${data}`)
         this.wss.to(client.id).emit('joined', `welcome user ${data}`);
-        this.check = true;
+        this.check[client.id] = 'true';
+        this.limit++;
+        this.logger.log(this.limit);
       }
       else {
         this.logger.log(`unauthorised access ${data} `);
@@ -34,7 +37,7 @@ export class TestGateway implements OnGatewayInit, OnGatewayConnection , OnGatew
 
   @SubscribeMessage('chat')
   handleMessage(client: Socket, data: string):void {
-    if(this.check) this.wss.emit('chat',data);
+    if(this.check[client.id]) this.wss.emit('chat',data);
     else client.disconnect();
   }
 

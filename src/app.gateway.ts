@@ -33,23 +33,23 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
   @SubscribeMessage('chat')
   async handleMessage(client: Socket, data:{message: string , room: string}): Promise<void> {
-    this.wss.to('hello').emit('chat',`message from user ${this.users[client.id]} ==>> ${data}`);
+    this.wss.emit('chat',`message from user ${this.users[client.id]} ==>> ${data}`);
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(client: Socket, room: string){
+  handleJoinRoom(client: Socket, room: string):void{
     client.join(room);
     client.broadcast.to(room).emit(`${this.users[client.id]} joined ${room}`);
   }
 
   @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(client: Socket, room: string){
+  handleLeaveRoom(client: Socket, room: string):void{
     client.leave(room);
     client.broadcast.to(room).emit(`${this.users[client.id]} left ${room}`);
   }
   
   @SubscribeMessage('welcome')
-  handlewelcome(client:Socket) {
+  handlewelcome(client:Socket):void {
     console.log(client.id);
     client.emit('welcome','welcome to the server');
   }
